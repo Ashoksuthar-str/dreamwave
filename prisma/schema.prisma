@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -13,15 +10,16 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 // ---------------------
 //  USER (Login, Roles)
 // ---------------------
 model User {
-  id       Int     @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   name     String
-  email    String  @unique
+  email    String @unique
   password String
-  role     String  @default("manager") // manager / staff
+  role     String @default("staff") // manager / staff
 }
 
 // ---------------------
@@ -37,9 +35,10 @@ model Category {
 //  WAREHOUSE / LOCATION
 // ---------------------
 model Warehouse {
-  id      Int      @id @default(autoincrement())
-  name    String
-  stocks  Stock[]
+  id          Int          @id @default(autoincrement())
+  name        String
+  stocks      Stock[]
+  adjustments Adjustment[] // FIXED
 }
 
 // ---------------------
@@ -49,24 +48,29 @@ model Product {
   id         Int      @id @default(autoincrement())
   name       String
   sku        String   @unique
-  uom        String   // Unit of Measure
+  uom        String
   categoryId Int
   category   Category @relation(fields: [categoryId], references: [id])
 
-  stocks     Stock[]
+  stocks Stock[]
+
+  // FIXED missing relations
+  receiptItems  ReceiptItem[]
+  deliveryItems DeliveryItem[]
+  adjustments   Adjustment[]
 }
 
 // ---------------------
 //  STOCK PER LOCATION
 // ---------------------
 model Stock {
-  id          Int       @id @default(autoincrement())
+  id          Int @id @default(autoincrement())
   productId   Int
   warehouseId Int
-  quantity    Int       @default(0)
+  quantity    Int @default(0)
 
-  product     Product   @relation(fields: [productId], references: [id])
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
 
   @@unique([productId, warehouseId])
 }
@@ -75,22 +79,22 @@ model Stock {
 //  RECEIPTS (Incoming)
 // ---------------------
 model Receipt {
-  id        Int             @id @default(autoincrement())
+  id        Int           @id @default(autoincrement())
   supplier  String?
-  status    String          @default("draft") // draft, validated
-  createdAt DateTime        @default(now())
+  status    String        @default("draft") // draft, validated
+  createdAt DateTime      @default(now())
   items     ReceiptItem[]
 }
 
 model ReceiptItem {
-  id          Int     @id @default(autoincrement())
+  id          Int @id @default(autoincrement())
   receiptId   Int
   productId   Int
   quantity    Int
   warehouseId Int
 
-  receipt     Receipt @relation(fields: [receiptId], references: [id])
-  product     Product @relation(fields: [productId], references: [id])
+  receipt Receipt @relation(fields: [receiptId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 }
 
 // ---------------------
@@ -105,14 +109,14 @@ model Delivery {
 }
 
 model DeliveryItem {
-  id          Int     @id @default(autoincrement())
+  id          Int @id @default(autoincrement())
   deliveryId  Int
   productId   Int
   quantity    Int
   warehouseId Int
 
-  delivery    Delivery @relation(fields: [deliveryId], references: [id])
-  product     Product  @relation(fields: [productId], references: [id])
+  delivery Delivery @relation(fields: [deliveryId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
 }
 
 // ---------------------
@@ -126,6 +130,6 @@ model Adjustment {
   newQty      Int
   createdAt   DateTime @default(now())
 
-  product     Product   @relation(fields: [productId], references: [id])
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
 }
