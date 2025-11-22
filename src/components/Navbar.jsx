@@ -140,18 +140,6 @@ const Navbar = () => {
             <Shuffle className="w-4 h-4" />
             Internal Transfers
           </Link>
-
-          <Link
-            href="/adjustments"
-            className={`flex items-center gap-3 px-10 py-2.5 rounded-lg text-sm transition-all ${
-              isActive("/adjustments")
-                ? "bg-purple-600 text-white font-medium shadow-lg"
-                : "text-gray-300 hover:bg-gray-800 hover:text-white"
-            }`}
-          >
-            <ClipboardList className="w-4 h-4" />
-            Inventory Adjustment
-          </Link>
         </div>
 
         {/* Move History */}

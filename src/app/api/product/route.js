@@ -38,9 +38,25 @@ export async function DELETE(req) {
       );
     }
 
-    await prisma.product.delete({
-      where: { id: Number(id) },
-    });
+    const productId = Number(id);
+
+    await prisma.$transaction([
+      prisma.stock.deleteMany({
+        where: { productId },
+      }),
+      prisma.receiptItem.deleteMany({
+        where: { productId },
+      }),
+      prisma.deliveryItem.deleteMany({
+        where: { productId },
+      }),
+      prisma.transferItem.deleteMany({
+        where: { productId },
+      }),
+      prisma.product.delete({
+        where: { id: productId },
+      }),
+    ]);
 
     return NextResponse.json(
       { message: "Product deleted successfully" },

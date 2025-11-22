@@ -32,11 +32,12 @@ model Category {
 //  WAREHOUSE / LOCATION
 // ---------------------
 model Warehouse {
-  id          Int          @id @default(autoincrement())
-  name        String
-  stocks      Stock[]
-  adjustments Adjustment[]
-  receipts    Receipt[]
+  id             Int          @id @default(autoincrement())
+  name           String
+  stocks         Stock[]
+  receipts       Receipt[]
+  transfersFrom  Transfer[]   @relation("TransferFrom")
+  transfersTo    Transfer[]   @relation("TransferTo")
 }
 
 // ---------------------
@@ -53,7 +54,7 @@ model Product {
   stocks        Stock[]
   receiptItems  ReceiptItem[]
   deliveryItems DeliveryItem[]
-  adjustments   Adjustment[]
+  transferItems TransferItem[]
 }
 
 // ---------------------
@@ -65,8 +66,8 @@ model Stock {
   warehouseId Int
   quantity    Int       @default(0)
 
-  product     Product   @relation(fields: [productId], references: [id])
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
 
   @@unique([productId, warehouseId])
 }
@@ -95,7 +96,7 @@ model ReceiptItem {
   receivedQty Int     @default(0)
 
   receipt     Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  product     Product @relation(fields: [productId], references: [id])
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 // ---------------------
@@ -116,21 +117,33 @@ model DeliveryItem {
   quantity    Int
   warehouseId Int
 
-  delivery    Delivery @relation(fields: [deliveryId], references: [id])
-  product     Product  @relation(fields: [productId], references: [id])
+  delivery    Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 // ---------------------
-//  INVENTORY ADJUSTMENTS
+//  INTERNAL TRANSFERS
 // ---------------------
-model Adjustment {
-  id          Int      @id @default(autoincrement())
-  productId   Int
-  warehouseId Int
-  oldQty      Int
-  newQty      Int
-  createdAt   DateTime @default(now())
+model Transfer {
+  id                Int             @id @default(autoincrement())
+  fromWarehouseId   Int
+  toWarehouseId     Int
+  status            String          @default("draft") // draft, completed
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  items             TransferItem[]
 
-  product     Product   @relation(fields: [productId], references: [id])
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  fromWarehouse     Warehouse       @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouse       Warehouse       @relation("TransferTo", fields: [toWarehouseId], references: [id])
+}
+
+model TransferItem {
+  id             Int      @id @default(autoincrement())
+  transferId     Int
+  productId      Int
+  quantity       Int
+  transferredQty Int      @default(0)
+
+  transfer       Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
